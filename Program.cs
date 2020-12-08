@@ -21,16 +21,18 @@ namespace ConsoleDemo
 
 
         //Calling Topics
-        // send a message to the topic
-        await ConsoleDemo.Topics.SendMessageToTopicAsync();
+        // // send a message to the topic
+        // await ConsoleDemo.Topics.SendMessageToTopicAsync();
 
-        // send a batch of messages to the topic
-        await ConsoleDemo.Topics.SendMessageBatchToTopicAsync();
+        // // send a batch of messages to the topic
+        // await ConsoleDemo.Topics.SendMessageBatchToTopicAsync();
 
-        // receive messages from the subscription
-        await ConsoleDemo.Topics.ReceiveMessagesFromSubscriptionAsync();
+        // // receive messages from the subscription
+        // await ConsoleDemo.Topics.ReceiveMessagesFromSubscriptionAsync();
 
+        await ConsoleDemo.Topics.SendObjectMessageToTopicAsync();
 
+        await ConsoleDemo.Topics.ReceiveObjectMessagesFromSubscriptionAsync();
 
     }
       

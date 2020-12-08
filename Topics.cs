@@ -4,6 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 
 namespace ConsoleDemo
 {
@@ -23,6 +26,24 @@ namespace ConsoleDemo
             // create a sender for the topic
             ServiceBusSender sender = client.CreateSender(topicName);
             await sender.SendMessageAsync(new ServiceBusMessage("Hello, World!"));
+            Console.WriteLine($"Sent a single message to the topic: {topicName}");
+        }
+    }
+
+    public static async Task SendObjectMessageToTopicAsync()
+    {
+        // create a Service Bus client 
+        await using (ServiceBusClient client = new ServiceBusClient(connectionString))
+        {
+            // create a sender for the topic
+            ServiceBusSender sender = client.CreateSender(topicName);
+            Patient patient = new Patient() { Id = 1, FirstName = "Amol", LastName = "Shelar",
+            DOB = "", CreatedDate = DateTime.Now.Date, Email = "a.a@b.com", 
+            Gender = "Male", Phone = "9769501637"  };
+            
+            string jsonString = JsonSerializer.Serialize(patient);
+            
+            await sender.SendMessageAsync(new ServiceBusMessage(jsonString));
             Console.WriteLine($"Sent a single message to the topic: {topicName}");
         }
     }
@@ -128,6 +149,64 @@ namespace ConsoleDemo
             Console.WriteLine("Stopped receiving messages");
         }
     }
+
+
+
+
+    static async Task ObjectMessageHandler(ProcessMessageEventArgs args)
+    {
+
+        string body = args.Message.Body.ToString();
+        Console.WriteLine($"Received: {body} from subscription: {subscriptionName}");
+
+        var patient = JsonSerializer.Deserialize<Patient>(body);
+        
+        Console.WriteLine("objectwise");
+        Console.WriteLine(patient.Id);
+        Console.WriteLine(patient.FirstName);
+        Console.WriteLine(patient.LastName);
+        Console.WriteLine(patient.Gender);
+        Console.WriteLine(patient.DOB);
+        Console.WriteLine(patient.Phone);
+        Console.WriteLine(patient.Email);
+
+        // complete the message. messages is deleted from the queue. 
+        await args.CompleteMessageAsync(args.Message);
+    }
+
+    static Task ObjectErrorHandler(ProcessErrorEventArgs args)
+    {
+        Console.WriteLine(args.Exception.ToString());
+        return Task.CompletedTask;
+    }
+
+    public static async Task ReceiveObjectMessagesFromSubscriptionAsync()
+    {
+        await using (ServiceBusClient client = new ServiceBusClient(connectionString))
+        {
+            // create a processor that we can use to process the messages
+            ServiceBusProcessor processor = client.CreateProcessor(topicName, subscriptionName, new ServiceBusProcessorOptions());
+
+            // add handler to process messages
+            processor.ProcessMessageAsync += ObjectMessageHandler;
+
+            // add handler to process any errors
+            processor.ProcessErrorAsync += ObjectErrorHandler;
+
+            // start processing 
+            await processor.StartProcessingAsync();
+
+            Console.WriteLine("Wait for a minute and then press any key to end the processing");
+            Console.ReadKey();
+
+            // stop processing 
+            Console.WriteLine("\nStopping the receiver...");
+            await processor.StopProcessingAsync();
+            Console.WriteLine("Stopped receiving messages");
+        }
+    }
+
+
 
 
         
